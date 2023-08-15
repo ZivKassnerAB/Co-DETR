@@ -73,8 +73,8 @@ class Co_DETR_Sahi:
         
     def parse_pickles_to_dataframe(self):
         data = []
-        for filename in glob.iglob(f"{self.raw_det_dir}/pickles/*.pickle"):
-            with open(os.path.join(folder_path, filename), 'rb') as file:
+        for path in glob.iglob(f"{self.raw_det_dir}/pickles/*.pickle"):
+            with open(path, 'rb') as file:
                 detections = pickle.load(file)
                 for detection in detections:
                     bbox_str = str(detection.bbox)
@@ -87,6 +87,7 @@ class Co_DETR_Sahi:
                     label = detection.category.id
                     if label in [0, 1, 2, 3, 5, 7]:
                         score = detection.score.value*100
+                        filename = os.path.basename(path)
                         data.append((filename.replace('.pickle', '.png'), x_center, y_center, width, height, label, score))
                         
         self.df = pd.DataFrame(data, columns=['name', 'x_center', 'y_center', 'width', 'height', 'label', 'score'])
