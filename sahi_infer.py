@@ -13,6 +13,7 @@ import os
 import pickle
 import pandas as pd
 import argparse
+import glob
 
 torch.cuda.empty_cache()
 
@@ -72,22 +73,21 @@ class Co_DETR_Sahi:
         
     def parse_pickles_to_dataframe(self):
         data = []
-        for filename in os.listdir(self.raw_det_dir):
-            if filename.endswith('.pickle'):
-                with open(os.path.join(folder_path, filename), 'rb') as file:
-                    detections = pickle.load(file)
-                    for detection in detections:
-                        bbox_str = str(detection.bbox)
-                        coords_str = bbox_str[bbox_str.index('<')+1:bbox_str.index('>')].split(',')[0:4]
-                        x1, y1, x2, y2 = map(float, [coord.strip("()") for coord in coords_str])
-                        x_center = (x1 + x2) / 2
-                        y_center = (y1 + y2) / 2
-                        width = x2 - x1
-                        height = y2 - y1
-                        label = detection.category.id
-                        if label in [0, 1, 2, 3, 5, 7]:
-                            score = detection.score.value*100
-                            data.append((filename.replace('.pickle', '.png'), x_center, y_center, width, height, label, score))
+        for filename in glob.iglob(f"{self.raw_det_dir}/pickles/*.pickle"):
+            with open(os.path.join(folder_path, filename), 'rb') as file:
+                detections = pickle.load(file)
+                for detection in detections:
+                    bbox_str = str(detection.bbox)
+                    coords_str = bbox_str[bbox_str.index('<')+1:bbox_str.index('>')].split(',')[0:4]
+                    x1, y1, x2, y2 = map(float, [coord.strip("()") for coord in coords_str])
+                    x_center = (x1 + x2) / 2
+                    y_center = (y1 + y2) / 2
+                    width = x2 - x1
+                    height = y2 - y1
+                    label = detection.category.id
+                    if label in [0, 1, 2, 3, 5, 7]:
+                        score = detection.score.value*100
+                        data.append((filename.replace('.pickle', '.png'), x_center, y_center, width, height, label, score))
                         
         self.df = pd.DataFrame(data, columns=['name', 'x_center', 'y_center', 'width', 'height', 'label', 'score'])
         self.df.to_csv(f"{self.output_dir}/co_detr.tsv", sep='\t',index=False)
