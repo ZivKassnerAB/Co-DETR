@@ -27,7 +27,9 @@ class Co_DETR_Sahi:
                  weights_path: str='./weights/Co-DETR/co_dino_5scale_lsj_swin_large_3x_coco.pth',
                  conf_thresh: float=0.1,
                  image_size: int=1920,
-                 device: str=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
+                 device: str=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+                 no_sliced_prediction=False,
+                 data_type="yolo"):
         
         self.images_dir = images_dir
         self.output_dir = output_dir
@@ -37,6 +39,11 @@ class Co_DETR_Sahi:
         self.image_size = image_size
         self.device = device
         self.model_type = 'mmdet'
+        self.no_sliced_prediction = no_sliced_prediction
+        if data_type not in ['yolo', 'cityscapes']:
+            print(f"Invalid data type. Use 'yolo' or 'cityscapes'")
+        else:
+            self.data_type = data_type
         
         self.detection_model = AutoDetectionModel.from_pretrained(
             model_type=self.model_type,
@@ -68,7 +75,8 @@ class Co_DETR_Sahi:
             novisual=True, 
             export_pickle=True,
             project=self.output_dir,
-            name=self.raw_det_dir, 
+            name=self.raw_det_dir,
+            no_sliced_prediction=self.no_sliced_prediction 
         )
         
     def parse_pickles_to_dataframe(self):
@@ -85,11 +93,17 @@ class Co_DETR_Sahi:
                     width = x2 - x1
                     height = y2 - y1
                     label = detection.category.id
-                    if label in [0, 1, 2, 3, 5, 7]:
-                        score = detection.score.value*100
-                        filename = os.path.basename(path)
-                        data.append((filename.replace('.pickle', '.png'), x_center, y_center, width, height, label, score))
-                        
+                    if self.data_type == "yolo":
+                        if label in [0, 1, 2, 3, 5, 7]:
+                            score = detection.score.value*100
+                            filename = os.path.basename(path)
+                            data.append((filename.replace('.pickle', '.png'), x_center, y_center, width, height, label, score))
+                    elif self.data_type == "cityscapes":
+                        if label in [0, 1, 2, 3, 6, 7]:
+                            score = detection.score.value*100
+                            filename = os.path.basename(path)
+                            data.append((filename.replace('.pickle', '.png'), x_center, y_center, width, height, label, score)) 
+                
         self.df = pd.DataFrame(data, columns=['name', 'x_center', 'y_center', 'width', 'height', 'label', 'score'])
         self.df.to_csv(f"{self.output_dir}/co_detr.tsv", sep='\t',index=False)
         
@@ -108,6 +122,8 @@ if __name__ == "__main__":
     parser.add_argument("--slice_width", type=int, default=1280, help="Slice width")
     parser.add_argument("--overlap_height_ratio", type=float, default=0.1, help="Overlap height ratio")
     parser.add_argument("--overlap_width_ratio", type=float, default=0.1, help="Overlap width ratio")
+    parser.add_argument("--no_sliced_prediction", type=bool, default=False, help="Don't make sliced predictions")
+    parser.add_argument("--data_type", type=str, default="yolo", help="Data type of the trained model - 'yolo' or 'cityscapes'")
     
     args = parser.parse_args()
 
@@ -117,7 +133,9 @@ if __name__ == "__main__":
         config_path=args.config_path,
         weights_path=args.weights_path,
         conf_thresh=args.conf_thresh,
-        image_size=args.image_size
+        image_size=args.image_size,
+        no_sliced_prediction=args.no_sliced_prediction,
+        data_type=args.data_type
     )
     
     co_detr_sahi.slice_infer(
@@ -128,3 +146,5 @@ if __name__ == "__main__":
     )
     
     co_detr_sahi.parse_pickles_to_dataframe()
+    
+    
