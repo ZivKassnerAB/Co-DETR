@@ -25,7 +25,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class NMSProcessor:
     def __init__(self, iou_thresh=0.5):
-        self.iou_thresh = iou_thresh
+        self.iou_thresh = float(iou_thresh)
 
     def convert_to_corners(self, boxes):
         """ Convert boxes from center format to corners format """
