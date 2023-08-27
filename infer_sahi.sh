@@ -1,7 +1,7 @@
 #!/bin/bash
 
-OUTPUT_PARENT_DIR="/home/ubuntu/workspace/results/ab_car_validation_germany/faster_rcnn_cityscapes"
-OUTPUT_INFERENCE_DIR="${OUTPUT_PARENT_DIR}/infer_no_scale"
+OUTPUT_PARENT_DIR="/home/ubuntu/workspace/results/ab_car_validation_germany/ocrnet_hr48_512x1024"
+OUTPUT_INFERENCE_DIR="${OUTPUT_PARENT_DIR}/infer_sliced"
 
 mkdir -p ${OUTPUT_INFERENCE_DIR}
 

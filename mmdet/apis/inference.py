@@ -32,6 +32,7 @@ def init_detector(config, checkpoint=None, device='cuda:0', cfg_options=None):
     """
     if isinstance(config, (str, Path)):
         config = mmcv.Config.fromfile(config)
+        config.dump('/home/ubuntu/workspace/results/ab_car_validation_germany/ocrnet_hr48_512x1024/infer_sliced/config.py')
     elif not isinstance(config, mmcv.Config):
         raise TypeError('config must be a filename or Config object, '
                         f'but got {type(config)}')
